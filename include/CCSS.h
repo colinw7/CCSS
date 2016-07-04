@@ -287,7 +287,7 @@ class CCSS {
       return os;
     }
 
-    void print(std::ostream &os) const;
+    void print(std::ostream &os, bool cdata=true) const;
 
    private:
     Selector   selector_;
@@ -310,11 +310,13 @@ class CCSS {
 
   void getSelectors(std::vector<Selector> &selectors) const;
 
+  bool hasStyleData() const;
+
   StyleData &getStyleData(const Selector &selector);
 
   const StyleData &getStyleData(const Selector &selector) const;
 
-  void print(std::ostream &os) const;
+  void print(std::ostream &os, bool cdata=true) const;
 
   friend std::ostream &operator<<(std::ostream &os, const CCSS &css) {
     css.print(os);

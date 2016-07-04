@@ -271,6 +271,13 @@ skipComment(CStrParse &parse) const
   return false;
 }
 
+bool
+CCSS::
+hasStyleData() const
+{
+  return ! styleData_.empty();
+}
+
 CCSS::StyleData &
 CCSS::
 getStyleData(const Selector &selector)
@@ -300,12 +307,12 @@ getStyleData(const Selector &selector) const
 
 void
 CCSS::
-print(std::ostream &os) const
+print(std::ostream &os, bool cdata) const
 {
   for (const auto &d : styleData_) {
     const StyleData &styleData = d.second;
 
-    styleData.print(os);
+    styleData.print(os, cdata);
 
     os << std::endl;
   }
@@ -315,25 +322,46 @@ print(std::ostream &os) const
 
 void
 CCSS::StyleData::
-print(std::ostream &os) const
+print(std::ostream &os, bool cdata) const
 {
-  os << "<style class=\"";
+  if (! cdata) {
+    os << "<style class=\"";
 
-  int i = 0;
+    int i = 0;
 
-  for (const auto &part : selector_.parts()) {
-    if (i > 0)
-      os << " ";
+    for (const auto &part : selector_.parts()) {
+      if (i > 0)
+        os << " ";
 
-    os << *part;
+      os << *part;
 
-    ++i;
+      ++i;
+    }
+
+    os << "\"";
+
+    for (const auto &o : options_)
+      os << " " << o.getName() << "=\"" << o.getValue() << "\"";
+
+    os << "/>";
   }
+  else {
+    int i = 0;
 
-  os << "\"";
+    for (const auto &part : selector_.parts()) {
+      if (i > 0)
+        os << " ";
 
-  for (const auto &o : options_)
-    os << " " << o.getName() << "=\"" << o.getValue() << "\"";
+      os << *part;
 
-  os << "/>";
+      ++i;
+    }
+
+    os << " {";
+
+    for (const auto &o : options_)
+      os << " " << o.getName() << ":" << o.getValue() << ";";
+
+    os << " }";
+  }
 }
