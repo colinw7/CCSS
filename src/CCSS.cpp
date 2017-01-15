@@ -72,6 +72,15 @@ bool
 CCSS::
 parse(const std::string &str)
 {
+  struct Id {
+    std::string         id;
+    SelectName::SubType subType { SelectName::SubType::NONE };
+    std::string         subId;
+  };
+
+  typedef std::vector<Id>     IdList;
+  typedef std::vector<IdList> IdListList;
+
   CStrParse parse(str);
 
   while (! parse.eof()) {
@@ -84,37 +93,75 @@ parse(const std::string &str)
     }
 
     // get ids
-    Selector selector;
+    IdListList idListList;
 
     while (! parse.eof()) {
-      std::string id;
+      // read comma separated list of space separated ids
+      while (! parse.eof()) {
+        IdList idList;
 
-      if (! readId(parse, id)) {
-        if (isDebug())
-          std::cerr << "Empty id : '" << parse.stateStr() << "'" << std::endl;
-        return false;
-      }
+        while (! parse.eof()) {
+          Id id;
 
-      selector.addName(id);
+          if (! readId(parse, id.id)) {
+            if (isDebug())
+              std::cerr << "Empty id : '" << parse.stateStr() << "'" << std::endl;
+            return false;
+          }
 
-      if      (parse.isString(":first-child")) {
-        parse.skipChars(12);
+          if      (parse.isChar('>')) {
+            parse.skipChar();
 
-        selector.addFirstChild();
+            parse.skipSpace();
 
-        parse.skipSpace();
-      }
-      else if (parse.isChar('>')) {
+            if (! readId(parse, id.subId)) {
+              if (isDebug())
+                std::cerr << "Empty id : '" << parse.stateStr() << "'" << std::endl;
+              return false;
+            }
+
+            id.subType = SelectName::SubType::CHILD;
+          }
+          else if (parse.isChar('+')) {
+            parse.skipChar();
+
+            parse.skipSpace();
+
+            if (! readId(parse, id.subId)) {
+              if (isDebug())
+                std::cerr << "Empty id : '" << parse.stateStr() << "'" << std::endl;
+              return false;
+            }
+
+            id.subType = SelectName::SubType::SIBLING;
+          }
+          else if (parse.isChar('~')) {
+            parse.skipChar();
+
+            parse.skipSpace();
+
+            if (! readId(parse, id.subId)) {
+              if (isDebug())
+                std::cerr << "Empty id : '" << parse.stateStr() << "'" << std::endl;
+              return false;
+            }
+
+            id.subType = SelectName::SubType::PRECEDER;
+          }
+
+          idList.push_back(id);
+
+          if (parse.isChar(',') || parse.isChar('{'))
+            break;
+        }
+
+        if (! idList.empty())
+          idListList.push_back(idList);
+
+        if (! parse.isChar(','))
+          break;
+
         parse.skipChar();
-
-        selector.addChild();
-
-        parse.skipSpace();
-      }
-      else if (parse.isChar('+')) {
-        parse.skipChar();
-
-        selector.addSibling();
 
         parse.skipSpace();
       }
@@ -123,26 +170,114 @@ parse(const std::string &str)
         break;
     }
 
-    //------
+    //---
 
-    // get values
-    StyleData &styleData = getStyleData(selector);
+    if (! parse.isChar('{')) {
+      if (isDebug())
+        std::cerr << "Missing '{' for rule" << std::endl;
+      return false;
+    }
 
-    if (parse.isChar('{')) {
-      std::string str1;
+    std::string str1;
 
-      // still parse text with missing end brace, just exit loop
-      bool rc = readBracedString(parse, str1);
+    // still parse text with missing end brace, just exit loop
+    bool rc = readBracedString(parse, str1);
 
-      if (! parseAttr(str1, styleData))
-        return false;
+    StyleData styleData;
 
-      if (! rc)
-        break;
+    if (! parseAttr(str1, styleData))
+      return false;
+
+    if (! rc)
+      break;
+
+    //---
+
+    for (const auto &idList : idListList) {
+      Selector selector;
+
+      for (const auto &id : idList) {
+        addSelector(selector, id.id, id.subType, id.subId);
+      }
+
+      StyleData &styleData1 = getStyleData(selector);
+
+      for (const auto &opt : styleData.getOptions()) {
+        styleData1.addOption(opt);
+      }
     }
   }
 
   return true;
+}
+
+void
+CCSS::
+addSelector(Selector &selector, const std::string &id,
+            SelectName::SubType subType, const std::string &subId)
+{
+  assert(! id.empty());
+
+  std::string name = id;
+
+  SelectName::Type type = SelectName::Type::TYPE;
+
+  std::string className;
+
+  // # <id>
+  if      (name[0] == '#') {
+    type = SelectName::Type::ID;
+    name = name.substr(1);
+  }
+  // <name> [. <class> ]
+  else {
+    auto p = name.find('.');
+
+    if (p != std::string::npos) {
+      type      = SelectName::Type::CLASS;
+      className = name.substr(p + 1);
+      name      = name.substr(0, p);
+    }
+  }
+
+  //---
+
+  // <name> [ <expr> ]
+  std::string expr;
+
+  auto p = name.find('[');
+
+  if (p != std::string::npos) {
+    expr = name.substr(p + 1);
+    name = name.substr(0, p);
+
+    auto p1 = expr.find(']');
+
+    if (p1 != std::string::npos)
+      expr = expr.substr(0, p1);
+  }
+
+  //---
+
+  // <name>:<fn>
+  std::string fn;
+
+  p = name.find(':');
+
+  if (p != std::string::npos) {
+    fn  = name.substr(p + 1);
+    name = name.substr(0, p);
+  }
+
+  //---
+
+  selector.addName(type, name, className, subType, subId);
+
+  if (expr != "")
+    selector.addExpr(expr);
+
+  if (fn != "")
+    selector.addFunction(fn);
 }
 
 bool
@@ -192,7 +327,7 @@ parseAttr(const std::string &str, StyleData &styleData)
       return false;
     }
 
-    styleData.addOption(name, value);
+    styleData.addOption(Option(name, value));
   }
 
   return true;
@@ -206,7 +341,7 @@ readId(CStrParse &parse, std::string &id) const
 
   parse.skipSpace();
 
-  while (! parse.eof() && ! parse.isSpace() && ! parse.isChar('{')) {
+  while (! parse.eof() && ! parse.isSpace() && ! parse.isOneOf("{,>+~")) {
     char c;
 
     parse.readChar(&c);
