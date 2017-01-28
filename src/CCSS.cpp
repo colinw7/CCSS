@@ -194,16 +194,16 @@ parse(const std::string &str)
     //---
 
     for (const auto &idList : idListList) {
-      Selector selector;
-
       for (const auto &id : idList) {
+        Selector selector;
+
         addSelector(selector, id.id, id.subType, id.subId);
-      }
 
-      StyleData &styleData1 = getStyleData(selector);
+        StyleData &styleData1 = getStyleData(selector);
 
-      for (const auto &opt : styleData.getOptions()) {
-        styleData1.addOption(opt);
+        for (const auto &opt : styleData.getOptions()) {
+          styleData1.addOption(opt);
+        }
       }
     }
   }
@@ -438,6 +438,13 @@ getStyleData(const Selector &selector) const
   const StyleData &styleData = (*p).second;
 
   return styleData;
+}
+
+void
+CCSS::
+clear()
+{
+  styleData_.clear();
 }
 
 void

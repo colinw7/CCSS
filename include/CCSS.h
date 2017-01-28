@@ -39,7 +39,7 @@ class CCSS {
     };
 
    public:
-    SelectPart(Type type) :
+    explicit SelectPart(Type type) :
      type_(type) {
     }
 
@@ -190,7 +190,7 @@ class CCSS {
 
   class SelectExpr : public SelectPart {
    public:
-    SelectExpr(const std::string &expr) :
+    explicit SelectExpr(const std::string &expr) :
      SelectPart(SelectPart::Type::EXPR), expr_(expr) {
     }
 
@@ -231,7 +231,7 @@ class CCSS {
 
   class SelectFunction : public SelectPart {
    public:
-    SelectFunction(const std::string &fn) :
+    explicit SelectFunction(const std::string &fn) :
      SelectPart(SelectPart::Type::FUNCTION), fn_(fn) {
     }
 
@@ -287,7 +287,7 @@ class CCSS {
         delete p;
     }
 
-    const Selector &operator=(const Selector &s) {
+    Selector &operator=(const Selector &s) {
       for (auto &p : parts_)
         delete p;
 
@@ -402,7 +402,7 @@ class CCSS {
 
   class StyleData {
    public:
-    StyleData(const Selector &selector=Selector()) :
+    explicit StyleData(const Selector &selector=Selector()) :
      selector_(selector), options_() {
     }
 
@@ -450,6 +450,8 @@ class CCSS {
   StyleData &getStyleData(const Selector &selector);
 
   const StyleData &getStyleData(const Selector &selector) const;
+
+  void clear();
 
   void print(std::ostream &os, bool cdata=true) const;
 
