@@ -3,3 +3,8 @@
 
 ### 6/25/2016
  + print to inline style
+
+### 2/12/2017
+ + add validation API
+ + allow comments in more places
+ + add !important
