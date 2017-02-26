@@ -28,6 +28,7 @@ $(CDEBUG) \
 -I../../CXML/include \
 -I../../CFile/include \
 -I../../CStrUtil/include \
+-I../../CRegExp/include \
 -I../../CUtil/include \
 
 clean:

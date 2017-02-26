@@ -1,58 +1,15 @@
 #ifndef CCSS_H
 #define CCSS_H
 
+#include <CCSSTagData.h>
+
 #include <string>
-#include <vector>
 #include <map>
-#include <memory>
 #include <iostream>
 #include <sstream>
 #include <sys/types.h>
 
 class CStrParse;
-
-//------
-
-enum class CCSSAttributeOp {
-  NONE,
-  EQUAL,
-  PARTIAL,
-  STARTS_WITH
-};
-
-//------
-
-// Interface class to check if css selector matches tage data
-class CCSSTagData;
-
-typedef std::shared_ptr<CCSSTagData> CCSSTagDataP;
-
-class CCSSTagData {
- public:
-  typedef std::vector<CCSSTagDataP> TagDataArray;
-
- public:
-  CCSSTagData() { }
-
-  virtual ~CCSSTagData() { }
-
-  virtual bool isElement(const std::string &name) const = 0;
-
-  virtual bool isClass(const std::string &name) const = 0;
-
-  virtual bool isId(const std::string &name) const = 0;
-
-  virtual bool hasAttribute(const std::string &name, CCSSAttributeOp op,
-                            const std::string &value) const = 0;
-
-  virtual CCSSTagDataP getParent() const = 0;
-
-  virtual void getChildren(TagDataArray &children) const = 0;
-
-  virtual CCSSTagDataP getPrevSibling() const = 0;
-
-  virtual CCSSTagDataP getNextSibling() const = 0;
-};
 
 //------
 
@@ -626,6 +583,8 @@ class CCSS {
 
   bool processLine(const std::string &line);
 
+  bool parseSelector(const std::string &id, std::vector<StyleData> &styles);
+
   void getSelectors(std::vector<SelectorList> &selectors) const;
 
   bool hasStyleData() const;
@@ -648,6 +607,8 @@ class CCSS {
 
  private:
   bool parse(const std::string &str);
+
+  bool parseIdListList(CStrParse &parse, IdListList &idListList);
 
   bool parseAttr(const std::string &str, StyleData &styleData);
 

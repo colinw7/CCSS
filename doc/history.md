@@ -8,3 +8,6 @@
  + add validation API
  + allow comments in more places
  + add !important
+
+### 2/26/2017
+ + Support parse selector string

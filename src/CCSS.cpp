@@ -4,6 +4,7 @@
 #include <CFile.h>
 #include <CStrUtil.h>
 #include <CStrParse.h>
+#include <CRegExp.h>
 #include <cassert>
 
 CCSS::
@@ -56,6 +57,39 @@ processLine(const std::string &line)
   return parse(line);
 }
 
+bool
+CCSS::
+parseSelector(const std::string &id, std::vector<StyleData> &styles)
+{
+  CStrParse parse(id);
+
+  // get ids
+  IdListList idListList;
+
+  if (! parseIdListList(parse, idListList))
+    return false;
+
+  // add selector for each comma separated id
+  for (const auto &idList : idListList) {
+    SelectorList selectorList;
+
+    // add part for each space separator or child operator separated id
+    for (const auto &id : idList) {
+      Selector selector;
+
+      addSelectorParts(selector, id);
+
+      selectorList.addSelector(selector);
+    }
+
+    StyleData &styleData1 = getStyleData(selectorList);
+
+    styles.push_back(styleData1);
+  }
+
+  return true;
+}
+
 void
 CCSS::
 getSelectors(std::vector<SelectorList> &selectors) const
@@ -82,65 +116,13 @@ parse(const std::string &str)
       parse.skipSpace();
     }
 
+    //---
+
     // get ids
     IdListList idListList;
 
-    while (! parse.eof()) {
-      // read comma separated list of space separated ids
-      while (! parse.eof()) {
-        IdList idList;
-
-        while (! parse.eof()) {
-          Id id;
-
-          // read selector id
-          if (! readId(parse, id.id)) {
-            errorMsg("Empty id : '" + parse.stateStr() + "'");
-            return false;
-          }
-
-          // check for child selector
-          if      (parse.isOneOf(">+~")) {
-            if      (parse.isChar('>'))
-              id.nextType = NextType::CHILD;
-            else if (parse.isChar('+'))
-              id.nextType = NextType::SIBLING;
-            else if (parse.isChar('~'))
-              id.nextType = NextType::PRECEDER;
-
-            parse.skipChar();
-
-            parse.skipSpace();
-
-            idList.push_back(id);
-          }
-          // break if no more ids '}', or new set of ids ','
-          else if (parse.isChar(',') || parse.isChar('{')) {
-            idList.push_back(id);
-
-            break;
-          }
-          else {
-            id.nextType = NextType::DESCENDANT;
-
-            idList.push_back(id);
-          }
-        }
-
-        if (! idList.empty())
-          idListList.push_back(idList);
-
-        if (! parse.isChar(','))
-          break;
-
-        parse.skipChar();
-
-        parse.skipSpace();
-      }
-
-      if (parse.isChar('{'))
-        break;
-    }
+    if (! parseIdListList(parse, idListList))
+      return false;
 
     //---
 
@@ -182,6 +164,72 @@ parse(const std::string &str)
       for (const auto &opt : styleData.getOptions())
         styleData1.addOption(opt);
     }
+  }
+
+  return true;
+}
+
+bool
+CCSS::
+parseIdListList(CStrParse &parse, IdListList &idListList)
+{
+  // get ids
+
+  while (! parse.eof()) {
+    // read comma separated list of space separated ids
+    while (! parse.eof()) {
+      IdList idList;
+
+      while (! parse.eof()) {
+        Id id;
+
+        // read selector id
+        if (! readId(parse, id.id)) {
+          errorMsg("Empty id : '" + parse.stateStr() + "'");
+          return false;
+        }
+
+        // check for child selector
+        if      (parse.isOneOf(">+~")) {
+          if      (parse.isChar('>'))
+            id.nextType = NextType::CHILD;
+          else if (parse.isChar('+'))
+            id.nextType = NextType::SIBLING;
+          else if (parse.isChar('~'))
+            id.nextType = NextType::PRECEDER;
+
+          parse.skipChar();
+
+          parse.skipSpace();
+
+          idList.push_back(id);
+        }
+        // break if no more ids '}', or new set of ids ','
+        else if (parse.isChar(',') || parse.isChar('{')) {
+          idList.push_back(id);
+
+          break;
+        }
+        else {
+          id.nextType = NextType::DESCENDANT;
+
+          idList.push_back(id);
+        }
+      }
+
+      if (! idList.empty())
+        idListList.push_back(idList);
+
+      if (! parse.isChar(','))
+        break;
+
+      parse.skipChar();
+
+      parse.skipSpace();
+    }
+
+    if (parse.isChar('{'))
+      break;
   }
 
   return true;
@@ -792,15 +840,46 @@ checkMatch(const CCSSTagDataP &data) const
 
   // check functions
   if (! fns_.empty()) {
-    std::cerr << "selector functions not handled:";
+    // must match all
+    bool match = true;
+
+    bool error = false;
 
     for (const auto &fn : fns_) {
-      std::cerr << " " << fn;
+      std::vector<std::string> match_strs;
+
+      if      (CRegExpUtil::parse(fn, "nth-child(\\(.*\\))", match_strs)) {
+        long value;
+
+        if (! CStrUtil::toInteger(match_strs[0], &value))
+          continue;
+
+        if (! data->isNthChild(value)) {
+          match = false;
+          break;
+        }
+      }
+      else if (fn == "required" || fn == "invalid") {
+        if (! data->isInputValue(fn)) {
+          match = false;
+          break;
+        }
+      }
+      else {
+        if (! error) {
+          std::cerr << "selector functions not handled:";
+          error = true;
+        }
+
+        std::cerr << " " << fn;
+      }
     }
 
-    std::cerr << std::endl;
+    if (error)
+      std::cerr << std::endl;
 
-    return false;
+    if (! match)
+      return false;
   }
 
   //---
