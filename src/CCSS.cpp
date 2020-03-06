@@ -74,10 +74,10 @@ parseSelector(const std::string &id, std::vector<StyleData> &styles)
     SelectorList selectorList;
 
     // add part for each space separator or child operator separated id
-    for (const auto &id : idList) {
+    for (const auto &id1 : idList) {
       Selector selector;
 
-      addSelectorParts(selector, id);
+      addSelectorParts(selector, id1);
 
       selectorList.addSelector(selector);
     }
@@ -522,22 +522,22 @@ readId(CStrParse &parse, std::string &id) const
     char c;
 
     if (parse.isChar('[')) {
-      char c;
+      char c1;
 
-      parse.readChar(&c);
+      parse.readChar(&c1);
 
-      id += c;
+      id += c1;
 
       int sbracket = 1;
 
       while (! parse.eof()) {
-        parse.readChar(&c);
+        parse.readChar(&c1);
 
-        id += c;
+        id += c1;
 
-        if      (c == '[')
+        if      (c1 == '[')
           ++sbracket;
-        else if (c == ']') {
+        else if (c1 == ']') {
           --sbracket;
 
           if (sbracket == 0)
@@ -935,17 +935,17 @@ checkMatch(const CCSSTagDataP &data) const
     currentTagDatas.push_back(data);
 
     while (i >= 0) {
-      const CCSS::Selector &selector = selectors[i];
+      const CCSS::Selector &selector1 = selectors[i];
 
       CCSSTagData::TagDataArray parentTagDatas;
 
-      if      (selector.nextType() == NextType::DESCENDANT) {
+      if      (selector1.nextType() == NextType::DESCENDANT) {
         // collect list of any parents which match selector
         for (const auto &currentTagData : currentTagDatas) {
           CCSSTagDataP parent = currentTagData->getParent();
 
           while (parent) {
-            if (selector.checkMatch(parent))
+            if (selector1.checkMatch(parent))
               parentTagDatas.push_back(parent);
 
             parent = parent->getParent();
@@ -955,39 +955,39 @@ checkMatch(const CCSSTagDataP &data) const
         if (parentTagDatas.empty())
           return false;
       }
-      else if (selector.nextType() == NextType::CHILD) {
+      else if (selector1.nextType() == NextType::CHILD) {
         // update list if parent matches selector
         for (const auto &currentTagData : currentTagDatas) {
           CCSSTagDataP parent = currentTagData->getParent();
           if (! parent) continue;
 
-          if (selector.checkMatch(parent))
+          if (selector1.checkMatch(parent))
             parentTagDatas.push_back(parent);
         }
 
         if (parentTagDatas.empty())
           return false;
       }
-      else if (selector.nextType() == NextType::SIBLING) {
+      else if (selector1.nextType() == NextType::SIBLING) {
         // update list if previous sibling matches selector
         for (const auto &currentTagData : currentTagDatas) {
           CCSSTagDataP child = currentTagData->getPrevSibling();
           if (! child) continue;
 
-          if (selector.checkMatch(child))
+          if (selector1.checkMatch(child))
             parentTagDatas.push_back(child);
         }
 
         if (parentTagDatas.empty())
           return false;
       }
-      else if (selector.nextType() == NextType::PRECEDER) {
+      else if (selector1.nextType() == NextType::PRECEDER) {
         // update list if any previous sibling matches selector
         for (const auto &currentTagData : currentTagDatas) {
           CCSSTagDataP child = currentTagData->getPrevSibling();
 
           while (child) {
-            if (selector.checkMatch(child))
+            if (selector1.checkMatch(child))
               parentTagDatas.push_back(child);
 
             child = child->getPrevSibling();
