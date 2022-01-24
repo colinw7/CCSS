@@ -18,6 +18,10 @@ main(int argc, char **argv)
         style = true;
       else if (strcmp(&argv[i][1], "specificity") == 0)
         specificity = true;
+      else if (strcmp(&argv[i][1], "help") == 0) {
+        std::cerr << "Usage: CCSSTest [-debug] [-style] [-specificity] <file>\n";
+        exit(0);
+      }
       else
         std::cerr << "Invalid option: " << argv[i] << std::endl;
     }
