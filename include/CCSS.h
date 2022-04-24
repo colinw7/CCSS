@@ -272,12 +272,12 @@ class CCSS {
       if (name_ != "" && name_ != "*")
         s.addElement();
 
-      s.addId   (idNames   ().size());
-      s.addClass(classNames().size());
+      s.addId   (int(idNames   ().size()));
+      s.addClass(int(classNames().size()));
 
-      s.addClass(exprs_.size());
+      s.addClass(int(exprs_.size()));
 
-      s.addClass(fns_.size());
+      s.addClass(int(fns_.size()));
 
       return s;
     }
@@ -525,7 +525,7 @@ class CCSS {
 
     const OptionList &getOptions() const { return options_; }
 
-    uint getNumOptions() const { return options_.size(); }
+    uint getNumOptions() const { return uint(options_.size()); }
 
     const Option &getOption(uint i) const { return options_[i]; }
 
