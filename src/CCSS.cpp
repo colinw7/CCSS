@@ -266,7 +266,7 @@ parseSelectorData(const std::string &id, SelectorData &selectorData) const
 
   selectorData.name = id;
 
-  int pos = 0;
+  uint pos = 0;
 
   // <name> [# <id> ]
   if (findIdChar(selectorData.name, '#', pos)) {
@@ -274,7 +274,7 @@ parseSelectorData(const std::string &id, SelectorData &selectorData) const
 
     selectorData.name = selectorData.name.substr(0, pos);
 
-    int pos1 = 0;
+    uint pos1 = 0;
 
     while (findIdChar(idName, '#', pos1)) {
       std::string lhs = idName.substr(0, pos1);
@@ -290,11 +290,11 @@ parseSelectorData(const std::string &id, SelectorData &selectorData) const
 
   // <name> [. <class> ]
   if (findIdChar(selectorData.name, '.', pos)) {
-    std::string className = selectorData.name.substr(pos + 1);
+    std::string className = selectorData.name.substr(uint(pos + 1));
 
-    selectorData.name = selectorData.name.substr(0, pos);
+    selectorData.name = selectorData.name.substr(0, uint(pos));
 
-    int pos1 = 0;
+    uint pos1 = 0;
 
     while (findIdChar(className, '.', pos1)) {
       std::string lhs = className.substr(0, pos1);
@@ -382,9 +382,9 @@ parseSelectorData(const std::string &id, SelectorData &selectorData) const
 
 bool
 CCSS::
-findIdChar(const std::string &str, char c, int &pos)
+findIdChar(const std::string &str, char c, uint &pos)
 {
-  int i = 0;
+  uint i = 0;
 
   while (str[i] != '\0') {
     if      (str[i] == '[') {
@@ -445,7 +445,7 @@ parseAttr(const std::string &str, StyleData &styleData)
       value = readAttrValue(parse);
 
       if (value.size() >= importantStr.size()) {
-        int rpos = value.size() - importantStr.size();
+        uint rpos = uint(value.size() - importantStr.size());
 
         if (value.substr(rpos) == importantStr) {
           important = true;
@@ -854,7 +854,7 @@ checkMatch(const CCSSTagDataP &data) const
         if (! CStrUtil::toInteger(match_strs[0], &value))
           continue;
 
-        if (! data->isNthChild(value)) {
+        if (! data->isNthChild(int(value))) {
           match = false;
           break;
         }
@@ -918,9 +918,9 @@ checkMatch(const CCSSTagDataP &data) const
   // match last selector
   std::size_t n = selectors.size();
 
-  int i = n - 1;
+  int i = int(n - 1);
 
-  const CCSS::Selector &selector = selectors[i];
+  const CCSS::Selector &selector = selectors[uint(i)];
 
   if (! selector.checkMatch(data))
     return false;
@@ -935,7 +935,7 @@ checkMatch(const CCSSTagDataP &data) const
     currentTagDatas.push_back(data);
 
     while (i >= 0) {
-      const CCSS::Selector &selector1 = selectors[i];
+      const CCSS::Selector &selector1 = selectors[uint(i)];
 
       CCSSTagData::TagDataArray parentTagDatas;
 

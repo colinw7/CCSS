@@ -616,7 +616,7 @@ class CCSS {
 
   std::string readAttrValue(CStrParse &parse) const;
 
-  static bool findIdChar(const std::string &str, char c, int &pos);
+  static bool findIdChar(const std::string &str, char c, uint &pos);
 
   bool readId(CStrParse &parse, std::string &id) const;
 
